@@ -20,10 +20,9 @@ app.get("/", function (req, res) {
 
 app.get("/api/whoami", (req, res) =>{ 
 	const reqIp = req.ip;
-	console.log(reqIp);
 	const reqLanguage = req.headers['accept-language'];
 	const reqSoftware = req.headers['user-agent'];
-	res.json({ip: reqIp, language: reqLanguage, software: reqSoftware})
+	res.json({ipaddress: reqIp, language: reqLanguage, software: reqSoftware})
 })
 
 app.use("/api/:date", (req, res, next) => {
