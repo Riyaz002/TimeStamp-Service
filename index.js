@@ -22,12 +22,17 @@ app.use("/api/:date", (req, res, next) => {
 	const dateString = req.params.date;
 	const date = new Date(dateString);
 	if(date.toUTCString()==="Invalid Date" & isNaN(Number(dateString))){
-		res.json({ "utc": "Invalid Date" });
+		res.json({ "error": "Invalid Date" });
 	} else {
 		next();
 	}
 })
 
+app.get("/api/", (req, res) => {
+	const date = new Date();
+	const unix = Math.floor(date.getTime());
+	res.json({ unix: unix, utc: date.toUTCString()});
+})
 app.get("/api/1451001600000", (req, res) => {
 	res.json({ unix: 1451001600000, utc: "Fri, 25 Dec 2015 00:00:00 GMT" })
 })
