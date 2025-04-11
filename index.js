@@ -27,7 +27,7 @@ app.get("/api/:date", (req, res) => {
 	let unix;
 	if(dateString.includes('-')){
 		date = new Date(dateString);
-		unix = toTimeStamp(date);
+		unix = toTimestamp(date);
 	} else{
 		unix = dateString;
 		date = fromTimestamp(unix);
