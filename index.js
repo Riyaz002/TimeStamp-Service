@@ -20,10 +20,18 @@ app.use(express.urlencoded({ extended: true }));
 app.post("/api/shorturl", (req, res, next) => {
 	const originalUrl = req.body.url;
 	try{
-		new URL(originalUrl);
-		next();
+		let url = new URL(originalUrl);
+		let hostname = url.hostname;
+		dns.lookup(hostname, (err, address, family) => {
+			if(err){
+				res.json({ error: 'invalid url' })
+			} else{
+				next();
+			}
+		})
 	} catch(err){
-		res.json({error: 'inavlid url1'});
+		console.log(err);
+		res.json({ error: 'invalid url' });
 	}
 })
 
