@@ -56,7 +56,7 @@ app.post("/api/shorturl", (req, res) => {
 	res.json({original_url: url, shortUrl})
 })
 
-app.fetch("/api/shorturl/:shorturl", (req, res) => {
+app.use("/api/shorturl/:shorturl", (req, res) => {
 	const shortUrl = req.params.shorturl;
 	const originalUrl = urls.get(Number(shortUrl));
 	res.redirect(originalUrl);
