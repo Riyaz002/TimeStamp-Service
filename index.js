@@ -20,7 +20,7 @@ app.get("/", function (req, res) {
 
 app.get("/api/:date", (req, res) => {
 	const dateString = req.params.date;
-	const toTimestamp = date => Math.floor(date.getTime() / 1000);
+	const toTimestamp = date => Math.floor(date.getTime());
 	const fromTimestamp = timestamp => new Date(timestamp * 1000);
 
 	let date;
