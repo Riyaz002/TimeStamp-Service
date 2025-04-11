@@ -2,6 +2,7 @@
 // where your node app starts
 
 // init project
+var dns = require('dns');
 var express = require('express');
 var app = express();
 
