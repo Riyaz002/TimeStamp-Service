@@ -38,21 +38,20 @@ app.get("/api/1451001600000", (req, res) => {
 })
 
 app.get("/api/:date", (req, res) => {
-	const dateString = req.params.date;
-	const toTimestamp = date => Math.floor(date.getTime());
-	const fromTimestamp = timestamp => new Date(timestamp * 1000);
+ 	let date = req.params.date;
 
-	let date;
-	let unix;
-	if(dateString.includes('-')){
-		date = new Date(dateString);
-		unix = toTimestamp(date);
-	} else{
-		unix = dateString;
-		date = fromTimestamp(unix);
-	}
+  	if (!isNaN(Number(date))) {
+   	 	let unix = new Date(Number(date)).getTime();
+    		let utc = new Date(Number(date)).toUTCString();
+    		return res.json({ unix: unix, utc: utc });
+  	}
 
-	res.json({ unix: unix, utc: date.toUTCString() });
+  	let unix = new Date(date).getTime();
+  	if(isNaN(unix)) return res.json({ error: "Invalid Date" })
+
+ 	let utc = new Date(Date.parse(date)).toUTCString();
+
+  	return res.json({ unix: unix, utc: utc });
 })
 
 
