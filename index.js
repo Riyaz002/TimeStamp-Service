@@ -1,8 +1,12 @@
 let express = require('express');
 let app = express();
 
-app.get("/", (req, res) => {
-	res.send('Hello');
+
+app.get("/api/:date", (req, res) => {
+	const dateString = req.params.date;
+	const date = Date(dateString).toString();
+	res.json({ unix: dateString, utc: date })
+
 })
 
 app.listen(80, () => {
