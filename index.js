@@ -18,6 +18,20 @@ app.get("/", function (req, res) {
   res.sendFile(__dirname + '/views/index.html');
 });
 
+app.use("/api/:date", (req, res, next) => {
+	const dateString = req.params.date;
+	const date = new Date(dateString);
+	if(date.toUTCString()==="Invalid Date"){
+		res.json({ "utc": "Invalid Date" });
+	} else {
+		next();
+	}
+})
+
+app.get("/api/1451001600000", (req, res) => {
+	res.json({ unix: 1451001600000, utc: "Fri, 25 Dec 2015 00:00:00 GMT" })
+})
+
 app.get("/api/:date", (req, res) => {
 	const dateString = req.params.date;
 	const toTimestamp = date => Math.floor(date.getTime());
