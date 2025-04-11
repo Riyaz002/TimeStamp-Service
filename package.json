@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "cors": "^2.8.0",
-    "dns": "^0.2.2",
     "express": "^4.21.2"
   },
   "repository": {
