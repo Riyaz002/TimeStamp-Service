@@ -11,18 +11,20 @@ var dns = require('dns');
 var cors = require('cors');
 app.use(cors({optionsSuccessStatus: 200}));  // some legacy browsers choke on 204
 
+// Parse JSON bodies
+app.use(express.json());
+
 // To parse URL-encoded bodies (form data)
 app.use(express.urlencoded({ extended: true }));
 
-app.post("/api/shorturl", (req, url, next) => {
-	const url = req.body.url;
-	dns.lookup(url, (err, address, family) => {
-		if(err){
-			res.json({ error: 'invalid url' });
-		} else{
-			next();	
-		}
-	})
+app.post("/api/shorturl", (req, res, next) => {
+	const originalUrl = req.body.url;
+	try{
+		new URL(originalUrl);
+		next();
+	} catch(err){
+		res.json({error: 'inavlid url1'});
+	}
 })
 
 // http://expressjs.com/en/starter/static-files.html
@@ -40,15 +42,15 @@ function getHashCode(str) {
 }
 
 app.post("/api/shorturl", (req, res) => {
-	const { url } = req.body;
-	const shortUrl = getHashcode(url)
+	const url = req.body.url;
+	const shortUrl = getHashCode(url);
 	urls.set(shortUrl, url);
-	res.json({original_url: url, short_url})
+	res.json({original_url: url, shortUrl})
 })
 
 app.get("/api/shorturl/:shorturl", (req, res) => {
-	const shortUrl = req.params.shortUrl;
-	const originalUrl = urls.get(shortUrl);
+	const shortUrl = req.params.shorturl;
+	const originalUrl = urls.get(Number(shortUrl));
 	res.redirect(301, originalUrl);
 })
 
