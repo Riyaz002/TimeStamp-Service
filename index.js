@@ -59,7 +59,7 @@ app.post("/api/shorturl", (req, res) => {
 app.get("/api/shorturl/:shorturl", (req, res) => {
 	const shortUrl = req.params.shorturl;
 	const originalUrl = urls.get(Number(shortUrl));
-	res.redirect(301, originalUrl);
+	res.redirect(originalUrl);
 })
 
 // http://expressjs.com/en/starter/basic-routing.html
