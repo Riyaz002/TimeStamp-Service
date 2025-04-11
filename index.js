@@ -4,14 +4,53 @@
 // init project
 var express = require('express');
 var app = express();
+var dns = require('dns');
 
 // enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
 // so that your API is remotely testable by FCC 
 var cors = require('cors');
 app.use(cors({optionsSuccessStatus: 200}));  // some legacy browsers choke on 204
 
+// To parse URL-encoded bodies (form data)
+app.use(express.urlencoded({ extended: true }));
+
+app.post("/api/shorturl", (req, url, next) => {
+	const url = req.body.url;
+	dns.lookup(url, (err, address, family) => {
+		if(err){
+			res.json({ error: 'invalid url' });
+		} else{
+			next();	
+		}
+	})
+})
+
 // http://expressjs.com/en/starter/static-files.html
 app.use(express.static('public'));
+
+const urls = new Map();
+let count = 0;
+
+function getHashCode(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) | 0; // force 32-bit int
+  }
+  return hash;
+}
+
+app.post("/api/shorturl", (req, res) => {
+	const { url } = req.body;
+	const shortUrl = getHashcode(url)
+	urls.set(shortUrl, url);
+	res.json({original_url: url, short_url})
+})
+
+app.get("/api/shorturl/:shorturl", (req, res) => {
+	const shortUrl = req.params.shortUrl;
+	const originalUrl = urls.get(shortUrl);
+	res.redirect(301, originalUrl);
+})
 
 // http://expressjs.com/en/starter/basic-routing.html
 app.get("/", function (req, res) {
