@@ -48,13 +48,22 @@ app.get("/api/users", (req, res) => {
 //		})
 })
 
+function localToUTCDate (localDate) {
+        const year = new Date(localDate).getUTCFullYear()
+        const month = new Date(localDate).getUTCMonth()
+        const day = new Date(localDate).getUTCDate()
+        const UTCDate = new Date(Date.UTC(year, month, day))
+
+        return new Date(UTCDate.getTime() + UTCDate.getTimezoneOffset() * 60000).toDateString()
+}
+
 app.post("/api/users/:_id/exercises", (req, res) => {
 	var { description, duration, date } = req.body;
 	let newDate = undefined;
 	if(!date) {
-		newDate = new Date().toDateString();
+		newDate = localToUTCDate(new Date());
 	} else{
-		newDate = new Date(date).toDateString();
+		newDate = localToUTCDate(new Date(date));
 	}
 	console.log(newDate);
 	const id = req.params._id;
