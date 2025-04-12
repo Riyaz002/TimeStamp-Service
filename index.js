@@ -61,9 +61,9 @@ app.post("/api/users/:_id/exercises", (req, res) => {
 	var { description, duration, date } = req.body;
 	let newDate = undefined;
 	if(!date) {
-		newDate = localToUTCDate(new Date());
+		newDate = new Date().toISOString();
 	} else{
-		newDate = localToUTCDate(new Date(date));
+		newDate = new Date(date).toISOString();
 	}
 	console.log(newDate);
 	const id = req.params._id;
@@ -73,6 +73,9 @@ app.post("/api/users/:_id/exercises", (req, res) => {
 			savedUser.count = savedUser.log.length;
 			savedUser.save()
 				.then((updatedUser) => {
+					updatedUser.log.forEach(exercise => {
+						exercise.date = localToUTCDate(new Date(exercise.date))
+					})
 					res.json(updatedUser);
 				})
 		})
