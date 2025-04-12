@@ -8,6 +8,7 @@ var express = require('express');
 var app = express();
 require('./model/db.js');
 var Url = require('./model/url.js');
+var User = require('./model/user.js');
 
 // enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
 // so that your API is remotely testable by FCC 
@@ -19,6 +20,46 @@ app.use(express.json());
 
 // To parse URL-encoded bodies (form data)
 app.use(express.urlencoded({ extended: true }));
+
+app.post('/api/users', (req, res) => {
+	var username = req.body.username;
+	User({
+		username: username
+	}).save().then((savedUser) => {
+		res.json({ username: savedUser.username, _id: savedUser._id });
+	})
+})
+
+app.get("/api/users", (req, res) => {
+	User.find({}, 'username _id').then(users => {
+  		res.json(users);
+	});
+//	User.find({})
+//		.then((allUsers) => {
+//			res.json(allUsers);
+//		})
+})
+
+app.post("/api/users/:_id/exercises", (req, res) => {
+	var { description, duration, date } = req.body;
+	if(!date) {
+		date = new Date();
+	}
+	User.findById({ _id: req.params.id })
+		.then((savedUser) => {
+			savedUser.exercises.push({ description, duration, date});
+			savedUser.save()
+				.then((updatedUser) => {
+					res.json(updatedUser);
+				})
+		})
+})
+
+app.get("/api/users/:_id/logs", (req, res) => {
+	User.findById(req.params._id).then((user) => {
+		res.json(user);
+	})
+})
 
 app.post("/api/shorturl", (req, res, next) => {
 	const originalUrl = req.body.url;
