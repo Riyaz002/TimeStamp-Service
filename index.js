@@ -23,11 +23,19 @@ app.use(express.urlencoded({ extended: true }));
 
 app.post('/api/users', (req, res) => {
 	var username = req.body.username;
-	User({
-		username: username
-	}).save().then((savedUser) => {
-		res.json({ username: savedUser.username, _id: savedUser._id });
-	})
+	try{
+		User.findOneAndUpdate({
+			username: username
+		},{
+			username: username
+		},{
+			upsert: true, new: true
+		}).then((savedUser) => {
+			res.json({ username: savedUser.username, _id: savedUser._id });
+		})
+	} catch(err){
+		res.json({err: "User is already registered."})
+	}
 })
 
 app.get("/api/users", (req, res) => {
