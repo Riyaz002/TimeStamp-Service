@@ -69,14 +69,17 @@ app.post("/api/users/:_id/exercises", (req, res) => {
 	const id = req.params._id;
 	User.findById({ _id: id })
 		.then((savedUser) => {
-			savedUser.log.push({ description: description, duration: duration, date: newDate});
+			let newExercise = { description: description, duration: duration, date: newDate}
+			savedUser.log.push(newExercise);
 			savedUser.count = savedUser.log.length;
 			savedUser.save()
 				.then((updatedUser) => {
 					updatedUser.log.forEach(exercise => {
-						exercise.date = localToUTCDate(new Date(exercise.date))
-					})
-					res.json(updatedUser);
+						newExercise._id = exercise._id;
+						newExercise.date = localToUTCDate(new Date(exercise.date));
+						exercise.date = newExercise.date;
+					});
+					res.json({username: savedUser.username, newExercise});
 				})
 		})
 })
@@ -91,11 +94,24 @@ app.get("/api/users/:_id/exercises", (req, res) => {
 
 app.get("/api/users/:_id/logs", (req, res) => {
 	let newlog = [];
+	const { from, to } = req.query;
+	let limit = req.query.limit;
+	if(!limit){
+		limit = Number.MAX_SAFE_INTEGER;
+	}
 	User.findById(req.params._id)
 		.then((user) => {
 			user.log = user.log.map( current => {
-				current.date = new Date(current.date).toDateString();
-				newlog.push({ description: current.description, duration: current.duration, date: current.date });
+				let date = new Date(current.date)
+				current.date = date.toDateString();
+				if(from && to && limit){
+					if(new Date(date) >= new Date(from) && new Date(date) <= new Date(to) && limit != newlog.length){
+						console.log(date + 'is between ' + from + ' and ' + to);
+						newlog.push({ description: current.description, duration: current.duration, date: current.date });
+					}
+				} else{
+					newlog.push({ description: current.description, duration: current.duration, date: current.date})
+				}
 			});
 			res.json({_id: user._id, username: user.username, count: user.count, log: newlog });
 	})
