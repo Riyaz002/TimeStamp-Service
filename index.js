@@ -2,9 +2,12 @@
 // where your node app starts
 
 // init project
+require('dotenv').config();
 var dns = require('dns');
 var express = require('express');
 var app = express();
+require('./model/db.js');
+var Url = require('./model/url.js');
 
 // enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
 // so that your API is remotely testable by FCC 
@@ -51,15 +54,23 @@ function getHashCode(str) {
 
 app.post("/api/shorturl", (req, res) => {
 	const url = req.body.url;
-	const shortUrl = getHashCode(url);
-	urls.set(shortUrl, url);
-	res.json({original_url: url, shortUrl})
+//	const shortUrl = getHashCode(url);
+//	urls.set(shortUrl, url);
+	Url({url: url})
+		.save()
+		.then((savedUrl) => {
+			res.json({original_url: url, short_url: savedUrl._id})
+		});
 })
 
 app.use("/api/shorturl/:shorturl", (req, res) => {
 	const shortUrl = req.params.shorturl;
-	const originalUrl = urls.get(Number(shortUrl));
-	res.redirect(originalUrl);
+	Url.findById({_id: shortUrl})
+		.then((savedUrl) =>{
+			res.redirect(savedUrl.url);
+		});
+	//const originalUrl = urls.get(Number(shortUrl));
+	//res.redirect(originalUrl);
 })
 
 // http://expressjs.com/en/starter/basic-routing.html
