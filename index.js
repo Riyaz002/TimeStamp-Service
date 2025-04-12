@@ -51,7 +51,9 @@ app.get("/api/users", (req, res) => {
 app.post("/api/users/:_id/exercises", (req, res) => {
 	var { description, duration, date } = req.body;
 	if(!date) {
-		date = new Date();
+		date = new Date().toDateString();
+	} else{
+		date = new Date(date).toDateString();
 	}
 	const id = req.params._id;
 	User.findById({ _id: id })
