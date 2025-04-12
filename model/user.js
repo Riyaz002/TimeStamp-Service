@@ -9,7 +9,7 @@ var exerciseSchema = mongoose.Schema({
 var userSchema = mongoose.Schema({
 	username: {type: String, required: true, unique: true},
 	count: {type: String, default: 0},
-	logs: [exerciseSchema]
+	log: [exerciseSchema]
 })
 
 var User = mongoose.model("User", userSchema);

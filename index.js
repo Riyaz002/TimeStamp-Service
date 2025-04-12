@@ -56,8 +56,8 @@ app.post("/api/users/:_id/exercises", (req, res) => {
 	const id = req.params._id;
 	User.findById({ _id: id })
 		.then((savedUser) => {
-			savedUser.logs.push({ description, duration, date});
-			savedUser.count = savedUser.logs.length;
+			savedUser.log.push({ description, duration, date});
+			savedUser.count = savedUser.log.length;
 			savedUser.save()
 				.then((updatedUser) => {
 					res.json(updatedUser);
@@ -69,19 +69,19 @@ app.get("/api/users/:_id/exercises", (req, res) => {
 	const id = req.params._id;
 	User.findById({ _id: id })
 		.then( (user) => {
-			res.json({ logs: user.logs });
+			res.json({ log: user.log });
 		})
 })
 
 app.get("/api/users/:_id/logs", (req, res) => {
-	let newLogs = [];
+	let newlog = [];
 	User.findById(req.params._id)
 		.then((user) => {
-			user.logs = user.logs.map( current => {
+			user.log = user.log.map( current => {
 				current.date = new Date(current.date).toDateString();
-				newLogs.push({ description: current.description, duration: current.duration, date: current.date });
+				newlog.push({ description: current.description, duration: current.duration, date: current.date });
 			});
-			res.json({_id: user._id, username: user.username, count: user.count, logs: newLogs });
+			res.json({_id: user._id, username: user.username, count: user.count, log: newlog });
 	})
 })
 
