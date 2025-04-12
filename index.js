@@ -3,18 +3,16 @@
 
 // init project
 require('dotenv').config();
-var dns = require('dns');
+var playingDates = require('./exercises/TimeStamp.js');
+var Whoami = require('./exercises/whoami.js');
+var Urlshortner = require('./exercises/urlshortner');
+var ExerciseTracker = require('./exercises/exercise-tracker.js');
+var FileUploader = require('./exercises/fileuploader.js');
 var express = require('express');
+var cors = require('cors');
 var app = express();
 require('./model/db.js');
-var Url = require('./model/url.js');
-var User = require('./model/user.js');
-var { Exercise } = require('./model/exercise.js');
-var multer = require('multer');
-// enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
-// so that your API is remotely testable by FCC 
-var cors = require('cors');
-app.use(cors({optionsSuccessStatus: 200}));  // some legacy browsers choke on 204
+app.use(cors());  // some legacy browsers choke on 204
 
 // Parse JSON bodies
 app.use(express.json());
@@ -22,235 +20,20 @@ app.use(express.json());
 // To parse URL-encoded bodies (form data)
 app.use(express.urlencoded({ extended: true }));
 
-// Set up storage location and filename
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/');  // where to save the uploaded files
-  },
-  filename: (req, file, cb) => {
-	console.log(file);
-    cb(null, file.originalname);  // file name format
-  }
-});
-
-const upload = multer({ storage: storage });
-
-app.use('/public', express.static(process.cwd() + '/public'));
-
-app.use('/', upload.single('upfile'), (req, res, next) => {
-  const file = req.file;
-  if(file){
-  	res.json({ name: file.filename, type: file.mimetype, size: file.size });
-        console.log('Received file:', file);
-  }
-  next();
-});
-
-app.post('/api/users', (req, res) => {
-	var username = req.body.username;
-	try{
-		User.findOneAndUpdate({
-			username: username
-		},{
-			username: username
-		},{
-			upsert: true, new: true
-		}).then((savedUser) => {
-			res.json({ username: savedUser.username, _id: savedUser._id });
-		})
-	} catch(err){
-		res.json({err: "User is already registered."})
-	}
+app.use((req, res, next) => {
+	console.log(req.path);
+	next();
 })
 
-app.get("/api/users", (req, res) => {
-	User.find({}, 'username _id').then(users => {
-  		res.json(users);
-	});
-//	User.find({})
-//		.then((allUsers) => {
-//			res.json(allUsers);
-//		})
-})
+app.use(FileUploader);
 
-function localToUTCDate (localDate) {
-        const year = new Date(localDate).getUTCFullYear()
-        const month = new Date(localDate).getUTCMonth()
-        const day = new Date(localDate).getUTCDate()
-        const UTCDate = new Date(Date.UTC(year, month, day))
+app.use(ExerciseTracker);
 
-        return new Date(UTCDate.getTime() + UTCDate.getTimezoneOffset() * 60000).toDateString()
-}
+app.use(Urlshortner);
 
-app.post("/api/users/:id/exercises", (req, res) => {
-	var { description, duration, date } = req.body;
-	let newDate = undefined;
-	if(!date) {
-		newDate = new Date();
-	} else{
-		newDate = new Date(date);
-	}
-	console.log(newDate);
-	const id = req.params.id;
-	console.log("id is " + id);
-	User.findById({ _id: id })
-		.then((savedUser) => {
-			let newExercise = { description: description, duration: duration, date: newDate}
-			savedUser.log.push(newExercise);
-			savedUser.count = savedUser.log.length;
-			savedUser.save()
-				.then((updatedUser) => {
-					updatedUser.log.forEach(exercise => {
-						newExercise._id = savedUser._id;
-						//newExercise.date = localToUTCDate(new Date(exercise.date));
-						newExercise.date = new Date(newExercise.date).toDateString();
-					});
-					res.json({updatedUser, date: newExercise.date, duration: newExercise.duration, description: newExercise.description});
-				})
-		})
-})
+app.use(Whoami);
 
-app.get("/api/users/:_id/exercises", (req, res) => {
-	const id = req.params._id;
-	User.findById({ _id: id })
-		.then( (user) => {
-			res.json({ log: user.log });
-		})
-})
-
-app.get("/api/users/:_id/logs", (req, res) => {
-	let newlog = [];
-	const { from, to } = req.query;
-	let limit = req.query.limit;
-	if(!limit){
-		limit = Number.MAX_SAFE_INTEGER;
-	}
-	User.findById(req.params._id)
-		.then((user) => {
-			user.log = user.log.map( current => {
-				let date = new Date(current.date)
-				current.date = date.toDateString();
-				if(from && to && limit){
-					if(new Date(date) >= new Date(from) && new Date(date) <= new Date(to) && limit != newlog.length){
-						console.log(date + 'is between ' + from + ' and ' + to);
-						newlog.push({ description: current.description, duration: current.duration, date: current.date });
-					}
-				} else{
-					newlog.push({ description: current.description, duration: current.duration, date: current.date})
-				}
-			});
-			res.json({_id: user._id, username: user.username, count: user.count, log: newlog });
-	})
-})
-
-app.post("/api/shorturl", (req, res, next) => {
-	const originalUrl = req.body.url;
-	try{
-		let url = new URL(originalUrl);
-		let hostname = url.hostname;
-		dns.lookup(hostname, (err, address, family) => {
-			if(err){
-				res.json({ error: 'invalid url' })
-			} else{
-				next();
-			}
-		})
-	} catch(err){
-		console.log(err);
-		res.json({ error: 'invalid url' });
-	}
-})
-
-// http://expressjs.com/en/starter/static-files.html
-app.use(express.static('public'));
-
-const urls = new Map();
-let count = 0;
-
-function getHashCode(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31 + str.charCodeAt(i)) | 0; // force 32-bit int
-  }
-  return hash;
-}
-
-app.post("/api/shorturl", (req, res) => {
-	const url = req.body.url;
-//	const shortUrl = getHashCode(url);
-//	urls.set(shortUrl, url);
-	Url({url: url})
-		.save()
-		.then((savedUrl) => {
-			res.json({original_url: url, short_url: savedUrl._id})
-		});
-})
-
-app.use("/api/shorturl/:shorturl", (req, res) => {
-	const shortUrl = req.params.shorturl;
-	Url.findById({_id: shortUrl})
-		.then((savedUrl) =>{
-			res.redirect(savedUrl.url);
-		});
-	//const originalUrl = urls.get(Number(shortUrl));
-	//res.redirect(originalUrl);
-})
-
-// http://expressjs.com/en/starter/basic-routing.html
-app.get("/", function (req, res) {
-  res.sendFile(__dirname + '/views/index.html');
-});
-
-app.get("/api/whoami", (req, res) =>{ 
-	const reqIp = req.ip;
-	const reqLanguage = req.headers['accept-language'];
-	const reqSoftware = req.headers['user-agent'];
-	res.json({ipaddress: reqIp, language: reqLanguage, software: reqSoftware})
-})
-
-app.use("/api/:date", (req, res, next) => {
-	const dateString = req.params.date;
-	const date = new Date(dateString);
-	if(date.toUTCString()==="Invalid Date" & isNaN(Number(dateString))){
-		res.json({ "error": "Invalid Date" });
-	} else {
-		next();
-	}
-})
-
-app.get("/api/", (req, res) => {
-	const date = new Date();
-	const unix = Math.floor(date.getTime());
-	res.json({ unix: unix, utc: date.toUTCString()});
-})
-app.get("/api/1451001600000", (req, res) => {
-	res.json({ unix: 1451001600000, utc: "Fri, 25 Dec 2015 00:00:00 GMT" })
-})
-
-app.get("/api/:date", (req, res) => {
- 	let date = req.params.date;
-
-  	if (!isNaN(Number(date))) {
-   	 	let unix = new Date(Number(date)).getTime();
-    		let utc = new Date(Number(date)).toUTCString();
-    		return res.json({ unix: unix, utc: utc });
-  	}
-
-  	let unix = new Date(date).getTime();
-  	if(isNaN(unix)) return res.json({ error: "Invalid Date" })
-
- 	let utc = new Date(Date.parse(date)).toUTCString();
-
-  	return res.json({ unix: unix, utc: utc });
-})
-
-
-// your first API endpoint... 
-app.get("/api/hello", function (req, res) {
-  res.json({greeting: 'hello API'});
-});
-
-
+app.use(playingDates);
 
 // Listen on port set in environment variable or default to 3000
 var listener = app.listen(process.env.PORT || 3000, function () {
