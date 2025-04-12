@@ -69,7 +69,7 @@ app.get("/api/users/:_id/exercises", (req, res) => {
 	const id = req.params._id;
 	User.findById({ _id: id })
 		.then( (user) => {
-			res.json({ exercises: user.logs });
+			res.json({ logs: user.logs });
 		})
 })
 
