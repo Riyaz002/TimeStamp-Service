@@ -50,15 +50,17 @@ app.get("/api/users", (req, res) => {
 
 app.post("/api/users/:_id/exercises", (req, res) => {
 	var { description, duration, date } = req.body;
+	let newDate = undefined;
 	if(!date) {
-		date = new Date().toDateString();
+		newDate = new Date().toDateString();
 	} else{
-		date = new Date(date).toDateString();
+		newDate = new Date(date).toDateString();
 	}
+	console.log(newDate);
 	const id = req.params._id;
 	User.findById({ _id: id })
 		.then((savedUser) => {
-			savedUser.log.push({ description, duration, date});
+			savedUser.log.push({ description: description, duration: duration, date: newDate});
 			savedUser.count = savedUser.log.length;
 			savedUser.save()
 				.then((updatedUser) => {
