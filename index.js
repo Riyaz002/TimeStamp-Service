@@ -9,7 +9,8 @@ var app = express();
 require('./model/db.js');
 var Url = require('./model/url.js');
 var User = require('./model/user.js');
-
+var { Exercise } = require('./model/exercise.js');
+var multer = require('multer');
 // enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
 // so that your API is remotely testable by FCC 
 var cors = require('cors');
@@ -20,6 +21,30 @@ app.use(express.json());
 
 // To parse URL-encoded bodies (form data)
 app.use(express.urlencoded({ extended: true }));
+
+// Set up storage location and filename
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/');  // where to save the uploaded files
+  },
+  filename: (req, file, cb) => {
+	console.log(file);
+    cb(null, file.originalname);  // file name format
+  }
+});
+
+const upload = multer({ storage: storage });
+
+app.use('/public', express.static(process.cwd() + '/public'));
+
+app.use('/', upload.single('upfile'), (req, res, next) => {
+  const file = req.file;
+  if(file){
+  	res.json({ name: file.filename, type: file.mimetype, size: file.size });
+        console.log('Received file:', file);
+  }
+  next();
+});
 
 app.post('/api/users', (req, res) => {
 	var username = req.body.username;
@@ -57,16 +82,17 @@ function localToUTCDate (localDate) {
         return new Date(UTCDate.getTime() + UTCDate.getTimezoneOffset() * 60000).toDateString()
 }
 
-app.post("/api/users/:_id/exercises", (req, res) => {
+app.post("/api/users/:id/exercises", (req, res) => {
 	var { description, duration, date } = req.body;
 	let newDate = undefined;
 	if(!date) {
-		newDate = new Date().toISOString();
+		newDate = new Date();
 	} else{
-		newDate = new Date(date).toISOString();
+		newDate = new Date(date);
 	}
 	console.log(newDate);
-	const id = req.params._id;
+	const id = req.params.id;
+	console.log("id is " + id);
 	User.findById({ _id: id })
 		.then((savedUser) => {
 			let newExercise = { description: description, duration: duration, date: newDate}
@@ -75,11 +101,11 @@ app.post("/api/users/:_id/exercises", (req, res) => {
 			savedUser.save()
 				.then((updatedUser) => {
 					updatedUser.log.forEach(exercise => {
-						newExercise._id = exercise._id;
-						newExercise.date = localToUTCDate(new Date(exercise.date));
-						exercise.date = newExercise.date;
+						newExercise._id = savedUser._id;
+						//newExercise.date = localToUTCDate(new Date(exercise.date));
+						newExercise.date = new Date(newExercise.date).toDateString();
 					});
-					res.json({username: savedUser.username, newExercise});
+					res.json({updatedUser, date: newExercise.date, duration: newExercise.duration, description: newExercise.description});
 				})
 		})
 })
