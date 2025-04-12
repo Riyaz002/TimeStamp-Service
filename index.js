@@ -81,7 +81,7 @@ app.get("/api/users/:_id/logs", (req, res) => {
 				current.date = new Date(current.date).toDateString();
 				newLogs.push({ description: current.description, duration: current.duration, date: current.date });
 			});
-			res.json({count: user.count, logs: newLogs });
+			res.json({_id: user._id, username: user.username, count: user.count, logs: newLogs });
 	})
 })
 
